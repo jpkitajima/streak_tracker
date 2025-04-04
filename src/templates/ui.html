@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streak Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+        }
+        div {
+            margin-bottom: 15px;
+        }
+        label {
+            margin-left: 8px;
+            color: #555;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>Activity Tracker</h1>
+    <br>
+    <form id="activityForm">
+        {% for activity, content in streaks.items() %}
+        <div>
+            <input type="checkbox" id="{{ activity }}" name="{{ activity }}" value="{{ activity }}" {% if content.is_done_today %} checked {% endif %}>
+            <label for="{{ activity }}">{{ activity }} (Current Streak: {{ content.most_recent_streak }} days)</label>
+        </div>
+        {% endfor %}
+        <div>
+            <label for="newActivity">Add New Activity:</label>
+            <input type="text" id="newActivity" name="newActivity">
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        document.getElementById('activityForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = {};
+            const checkboxes = {};
+
+            // Iterate over all checkboxes and set their values in the data object
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkboxes[checkbox.name] = checkbox.checked;
+            });
+
+            data['checkboxes'] = checkboxes
+
+            // Add the new activity to the data object
+            const newActivity = document.getElementById('newActivity').value;
+            if (newActivity) {
+                data['newActivity'] = newActivity; // Default to not done
+            }
+
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                location.reload(); // Refresh the page
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
