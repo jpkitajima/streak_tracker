@@ -1,11 +1,45 @@
 import sqlite3
 from collections import defaultdict
 from datetime import datetime, timedelta
+from interfaces.databse_manager import DatabaseManagerInterface
 
 
-class DatabaseManager:
+class DatabaseManager(DatabaseManagerInterface):
     def __init__(self):
         self.cursor = self._initialize_database()
+
+    def add_streak(self, activity, done):
+        timestamp = self._get_current_time_iso()
+
+        # Insert or replace a streak into the database
+        self.cursor.execute('''
+        INSERT OR REPLACE INTO streaks (Timestamp, activity, done)
+        VALUES (?, ?, ?)
+        ''', (timestamp, activity, done))
+
+        # Commit the changes
+        self.cursor.connection.commit()
+
+    def delete_activity(self, activity):
+        # Delete all entries of a certain activity from the database
+        self.cursor.execute('''
+        DELETE FROM streaks WHERE activity = ?
+        ''', (activity,))
+
+        # Commit the changes
+        self.cursor.connection.commit()
+
+    def get_activity_streaks(self) -> dict:
+        activities = self._get_all_activities()
+        streak_map = defaultdict(dict)
+        for activity in activities:
+            content = {}
+            is_done_today = self._is_activity_done_today(activity)
+            content["is_done_today"] = is_done_today
+            content["most_recent_streak"] = self._get_most_recent_streak(activity)
+            streak_map[activity] = content
+        print(streak_map)
+        return streak_map
 
     @staticmethod
     def _initialize_database(db_name='streak_tracker.db'):
@@ -29,25 +63,13 @@ class DatabaseManager:
         conn.commit()
         return cursor
 
-    def close_connection(self):
-        # Close the database connection
-        self.cursor.connection.close()
-
     @staticmethod
-    def get_current_time_iso():
+    def _get_current_time_iso():
         return datetime.now().date().isoformat()
 
-    def add_streak(self, activity, done):
-        timestamp = self.get_current_time_iso()
-
-        # Insert or replace a streak into the database
-        self.cursor.execute('''
-        INSERT OR REPLACE INTO streaks (Timestamp, activity, done)
-        VALUES (?, ?, ?)
-        ''', (timestamp, activity, done))
-
-        # Commit the changes
-        self.cursor.connection.commit()
+    def _close_connection(self):
+        # Close the database connection
+        self.cursor.connection.close()
 
     def _get_most_recent_streak(self, activity):
         # Query to get all streaks for the given activity, ordered by Timestamp
@@ -91,18 +113,9 @@ class DatabaseManager:
         activities = [row[0] for row in self.cursor.fetchall()]
         return activities
 
-    def delete_activity(self, activity):
-        # Delete all entries of a certain activity from the database
-        self.cursor.execute('''
-        DELETE FROM streaks WHERE activity = ?
-        ''', (activity,))
-
-        # Commit the changes
-        self.cursor.connection.commit()
-
-    def is_activity_done_today(self, activity):
+    def _is_activity_done_today(self, activity):
         # Get today's date in ISO format
-        today = self.get_current_time_iso()
+        today = self._get_current_time_iso()
 
         # Query to check if the activity is done today
         self.cursor.execute('''
@@ -112,19 +125,6 @@ class DatabaseManager:
 
         row = self.cursor.fetchone()
         return row is not None and row[0] == 1
-
-    def get_activity_streaks(self) -> dict:
-        activities = self._get_all_activities()
-        streak_map = defaultdict(dict)
-        for activity in activities:
-            content = {}
-            is_done_today = self.is_activity_done_today(activity)
-            content["is_done_today"] = is_done_today
-            content["most_recent_streak"] = self._get_most_recent_streak(activity)
-            streak_map[activity] = content
-        print(streak_map)
-        return streak_map
-
 
 
 if __name__ == "__main__":
