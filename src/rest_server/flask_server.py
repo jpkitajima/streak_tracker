@@ -32,3 +32,13 @@ class FlaskServer:
                 self.db.add_streak(key, value)
 
             return jsonify(new_data), 201
+
+        @self.app.route('/delete', methods=['POST'])
+        def delete_activity():
+            new_data = request.json
+
+            activity_to_delete = new_data.get('deleteActivity')
+
+            self.db.delete_activity(activity_to_delete)
+
+            return '', 200

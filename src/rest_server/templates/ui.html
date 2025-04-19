@@ -48,7 +48,15 @@
             cursor: pointer;
         }
         button:hover {
+        padding: 5px 10px;
             background-color: #218838;
+        }
+        button.delete {
+            padding: 5px 10px;
+            background-color: #6c757d;
+        }
+        button.delete:hover {
+            background-color: #5a6268;
         }
     </style>
 </head>
@@ -60,6 +68,8 @@
         <div>
             <input type="checkbox" id="{{ activity }}" name="{{ activity }}" value="{{ activity }}" {% if content.is_done_today %} checked {% endif %}>
             <label for="{{ activity }}">{{ activity }} (Current Streak: {{ content.most_recent_streak }} days)</label>
+            <br>
+            <button type="button" class="delete" onclick="deleteActivity('{{ activity }}')">Delete</button>
         </div>
         {% endfor %}
         <div>
@@ -106,6 +116,33 @@
                 console.error('Error:', error);
             });
         });
+
+        function deleteActivity(activity) {
+            const userConfirmed = confirm(`Are you sure you want to delete the activity: "${activity}"?`);
+            if (userConfirmed) {
+                const data = {
+                    'deleteActivity': activity
+                };
+                fetch('/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log(`Activity ${activity} deleted successfully.`);
+                        location.reload(); // Refresh the page
+                    } else {
+                        console.error(`Failed to delete activity ${activity}.`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
     </script>
 </body>
 </html>
